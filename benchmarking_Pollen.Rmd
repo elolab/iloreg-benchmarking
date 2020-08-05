@@ -1,0 +1,212 @@
+---
+title: "Benchmarking - Pollen"
+output: html_notebook
+---
+
+```{r}
+library(aricode)
+library(ggplot2)
+library(cowplot)
+```
+
+
+```{r}
+# Functions for running all the algorithms and visualization
+source("help_functions.R")
+```
+
+
+
+Pollen
+```{r}
+raw_data <- read.table("~/../Downloads/Pollen_dataset_tpm_values.txt.gz",sep="\t",header = TRUE,row.names = 1,quote = "",as.is = T)
+raw_data <- Matrix::Matrix(as.matrix(raw_data),sparse = TRUE)
+data <- log(raw_data+1) # add pseudocount and take logarithm
+data <- Matrix::Matrix(as.matrix(data),sparse = TRUE)
+data <- data[!(grepl("ERCC-",rownames(data))|grepl("Spike",rownames(data))),] # Remove spike-ins
+raw_data <- raw_data[!(grepl("ERCC-",rownames(raw_data))|grepl("Spike",rownames(raw_data))),] # Remove spike-ins
+
+ground_truth <- factor(unlist(lapply(strsplit(colnames(data),"_"),function(x) x[2])))
+```
+
+
+Pollen - ILoReg
+```{r}
+
+iloreg_object <- RunILoReg(data)
+
+```
+
+```{r}
+clustering_iloreg <- iloreg_object@clustering.optimal
+tsne_iloreg <- iloreg_object@tsne.embeddings
+```
+
+
+```{r fig_Pollen_ILoReg, fig.height = 10, fig.width = 12, fig.align = "center"}
+p_tsne_iloreg_clustering <- ClusterScatterPlot(iloreg_object,clustering.type = "optimal",point.size = 0.7,dim.reduction.type = "tsne",return.plot = T) + ggtitle("ILoReg - t-SNE") + theme(plot.title = element_text(hjust = 0.5))
+p_umap_iloreg_clustering <- ClusterScatterPlot(iloreg_object,clustering.type = "optimal",point.size = 0.7,dim.reduction.type = "umap",return.plot = T) + ggtitle("ILoReg - UMAP") + theme(plot.title = element_text(hjust = 0.5))
+p_tsne_iloreg_ground_truth <- AnnotationScatterPlot(iloreg_object,annotation = ground_truth,point.size = 0.7,dim.reduction.type = "tsne",return.plot = T) + ggtitle("Ground truth - t-SNE") + theme(plot.title = element_text(hjust = 0.5))
+p_umap_iloreg_ground_truth <- AnnotationScatterPlot(iloreg_object,annotation = ground_truth,point.size = 0.7,dim.reduction.type = "umap",return.plot = T) + ggtitle("Ground truth - UMAP") + theme(plot.title = element_text(hjust = 0.5))
+
+plot_grid(p_tsne_iloreg_clustering,p_umap_iloreg_clustering,p_tsne_iloreg_ground_truth,p_umap_iloreg_ground_truth)
+
+```
+
+
+```{r}
+aricode::ARI(iloreg_object@clustering.optimal,ground_truth)
+```
+
+
+Pollen - Seurat
+```{r}
+
+# Use loose cell filtering criteria. 
+# Filtering cells is not necessary, because the benchmarking datasets have already
+# gone through quality control in the original studies.
+
+nFeature_RNA_min <- 200
+nFeature_RNA_max <- 20000
+percent_mt <- 99
+seurat_results <- RunSeurat(raw.data = raw_data,log.normalized.data = data,min.cells = 3,min.features = 200,
+                            nFeature_RNA_min = nFeature_RNA_min,nFeature_RNA_max = nFeature_RNA_max,percent_mt = percent_mt,nfeatures = 2000,dims = 1:10,resolution = 0.8,return.seurat.obj = TRUE)
+
+```
+
+```{r}
+clustering_Seurat <- Idents(seurat_results)
+tsne_Seurat <- seurat_results@reductions$tsne@cell.embeddings
+rm(seurat_results)
+```
+
+
+```{r fig_Pollen_Seurat, fig.height = 3, fig.width = 8, fig.align = "center"}
+p_tsne_seurat_clustering <- PlotTwoDimensional(tsne_Seurat,clustering_Seurat,point.size = 0.7,return.plot = T) + ggtitle("Seurat - t-SNE") + theme(plot.title = element_text(hjust = 0.5))
+p_tsne_seurat_ground_truth <- PlotTwoDimensional(tsne_Seurat,ground_truth,point.size = 0.7,return.plot = T) + ggtitle("Ground truth - t-SNE") + theme(plot.title = element_text(hjust = 0.5))
+
+plot_grid(p_tsne_seurat_clustering,p_tsne_seurat_ground_truth)
+
+```
+
+
+```{r}
+aricode::ARI(ground_truth,clustering_Seurat)
+```
+
+
+
+Pollen - SC3
+```{r}
+
+sc3 <- RunSC3(raw_data,data,k = 2:50,gene.filter = TRUE,n.cores = 12)
+
+sc3 <- SC3::sc3_estimate_k(sc3)
+
+k_optimal <- sc3@metadata$sc3$k_estimation
+
+clustering_SC3 <- clusterings[[as.character(k_optimal)]]
+
+scater_tsne <- scater::plotTSNE(sc3) # Run t-SNE visualization using scater R package
+tsne_SC3 <- as.matrix(scater_tsne$data)
+
+```
+
+
+
+
+```{r fig_Pollen_SC3, fig.height = 3, fig.width = 8, fig.align = "center"}
+p_tsne_SC3_clustering <- PlotTwoDimensional(tsne_SC3,clustering_SC3,point.size = 0.7,return.plot = T) + ggtitle("SC3 - t-SNE") + theme(plot.title = element_text(hjust = 0.5))
+p_tsne_SC3_ground_truth <- PlotTwoDimensional(tsne_SC3,ground_truth,point.size = 0.7,return.plot = T) + ggtitle("Ground truth - t-SNE") + theme(plot.title = element_text(hjust = 0.5))
+
+plot_grid(p_tsne_SC3_clustering,p_tsne_SC3_ground_truth)
+
+```
+
+
+```{r}
+aricode::ARI(ground_truth,clustering_SC3)
+```
+
+Pollen - CIDR
+```{r}
+cidr_out <- RunCIDR(raw_data,run.dimensionality.reduction = TRUE)
+
+```
+
+
+```{r}
+pca_cidr <- cidr_out$pca
+clustering_cidr <- factor(cidr_out$cidr_out@clusters)
+```
+
+
+```{r fig_Pollen_CIDR, fig.height = 3, fig.width = 8, fig.align = "center"}
+p_pca_cidr_clustering <- PlotTwoDimensional(pca_cidr,clustering_cidr,point.size = 0.7,return.plot = T) + ggtitle("CIDR - PCA") + theme(plot.title = element_text(hjust = 0.5))
+p_pca_cidr_ground_truth <- PlotTwoDimensional(pca_cidr,ground_truth,point.size = 0.7,return.plot = T) + ggtitle("Ground truth - PCA") + theme(plot.title = element_text(hjust = 0.5))
+
+plot_grid(p_pca_cidr_clustering,p_pca_cidr_ground_truth)
+
+```
+
+```{r}
+aricode::ARI(ground_truth,clustering_cidr)
+```
+
+
+
+Pollen - RaceID3
+```{r}
+
+raceid_out <- RunRaceID(raw.data = raw_data,max.clusters = 30)
+
+```
+
+
+```{r}
+
+
+tsne_raceid3 <- as.matrix(raceid_out@tsne) ; rownames(tsne_raceid3) <- colnames(data)
+clustering_raceid3 <- factor(raceid_out@cluster$kpart)
+```
+
+
+```{r fig_Pollen_RaceID3, fig.height = 3, fig.width = 8, fig.align = "center"}
+p_tsne_raceid3_clustering <- PlotTwoDimensional(tsne_raceid3,clustering_raceid3,point.size = 0.7,return.plot = T) + ggtitle("RaceID3 - PCA") + theme(plot.title = element_text(hjust = 0.5))
+p_tsne_raceid3_ground_truth <- PlotTwoDimensional(tsne_raceid3,ground_truth,point.size = 0.7,return.plot = T) + ggtitle("Ground truth - PCA") + theme(plot.title = element_text(hjust = 0.5))
+
+plot_grid(p_tsne_raceid3_clustering,p_tsne_raceid3_ground_truth)
+
+```
+
+
+```{r}
+aricode::ARI(ground_truth,clustering_raceid3)
+```
+
+
+```{r}
+results <- list(
+  ILoReg=clustComp(ground_truth,iloreg_object@clustering.optimal)$ARI,
+  Seurat=clustComp(ground_truth,clustering_Seurat)$ARI,
+  SC3=clustComp(ground_truth,clustering_sc3)$ARI,
+  CIDR=clustComp(ground_truth,clustering_cidr)$ARI,
+  RaceID3=clustComp(ground_truth,clustering_raceid3)$ARI
+  
+)
+
+barplot(unlist(results))
+```
+
+
+```{r}
+save(clustering_iloreg,tsne_iloreg,file="Pollen_ILoReg_clustering_dimensionality_reduction.RData")
+save(clustering_Seurat,tsne_Seurat,file="Pollen_Seurat_clustering_dimensionality_reduction.RData")
+save(clustering_SC3,tsne_SC3,file="Pollen_SC3_clustering_dimensionality_reduction.RData")
+save(clustering_cidr,pca_cidr,file="Pollen_CIDR_clustering_dimensionality_reduction.RData")
+save(clustering_raceid3,tsne_raceid3,file="Pollen_RaceID3_clustering_dimensionality_reduction.RData")
+
+```
+
+
+

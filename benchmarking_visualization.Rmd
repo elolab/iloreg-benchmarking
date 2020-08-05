@@ -1,0 +1,477 @@
+---
+title: "Benchmarking visualization"
+output: html_notebook
+---
+
+```{r}
+library(aricode)
+library(ggplot2)
+library(cowplot)
+```
+
+
+```{r}
+raw_data <- read.table("~/../Downloads/Pollen_dataset_tpm_values.txt.gz",sep="\t",header = TRUE,row.names = 1,quote = "",as.is = T)
+ground_truth <- factor(unlist(lapply(strsplit(colnames(raw_data),"_"),function(x) x[2])))
+rm(raw_data)
+
+load("Pollen_ILoReg_clustering_dimensionality_reduction.RData")
+load("Pollen_Seurat_clustering_dimensionality_reduction.RData")
+load("Pollen_SC3_clustering_dimensionality_reduction.RData")
+load("Pollen_CIDR_clustering_dimensionality_reduction.RData")
+load("Pollen_RaceID3_clustering_dimensionality_reduction.RData")
+
+df_Pollen <- as.data.frame(matrix(c(ARI(ground_truth,clustering_iloreg),
+         ARI(ground_truth,clustering_Seurat),
+         ARI(ground_truth,clustering_SC3),
+         ARI(ground_truth,clustering_cidr),
+         ARI(ground_truth,clustering_raceid3)),ncol = 1,dimnames = list(c(1:5),"ARI")))
+df_Pollen$Method <- c("ILoReg","Seurat","SC3","CIDR","RaceID3")
+df_Pollen$Dataset <- "Pollen"
+print(df_Pollen)
+
+k_estimates_Pollen <- c(length(table(ground_truth)),
+                         length(table(clustering_iloreg)),
+                         length(table(clustering_Seurat)),
+                         length(table(clustering_SC3)),
+                         length(table(clustering_cidr)),
+                         length(table(clustering_raceid3)))
+```
+
+
+
+```{r}
+sce_object <- readRDS("~/../Downloads/baron-human.rds")
+ground_truth <- sce_object$cell_type1
+ground_truth <- ground_truth[sce_object$human==1]
+rm(sce_object)
+
+load("Baron1_ILoReg_clustering_dimensionality_reduction.RData")
+load("Baron1_Seurat_clustering_dimensionality_reduction.RData")
+load("Baron1_SC3_clustering_dimensionality_reduction.RData")
+load("Baron1_CIDR_clustering_dimensionality_reduction.RData")
+load("Baron1_RaceID3_clustering_dimensionality_reduction.RData")
+
+df_Baron1 <- as.data.frame(matrix(c(ARI(ground_truth,clustering_iloreg),
+         ARI(ground_truth,clustering_Seurat),
+         ARI(ground_truth,clustering_sc3),
+         ARI(ground_truth,clustering_cidr),
+         ARI(ground_truth,clustering_raceid)),ncol = 1,dimnames = list(c(1:5),"ARI")))
+df_Baron1$Method <- c("ILoReg","Seurat","SC3","CIDR","RaceID3")
+df_Baron1$Dataset <- "Baron1"
+print(df_Baron1)
+
+k_estimates_Baron_1 <- c(length(table(ground_truth)),
+                         length(table(clustering_iloreg)),
+                         length(table(clustering_Seurat)),
+                         length(table(clustering_sc3)),
+                         length(table(clustering_cidr)),
+                         length(table(clustering_raceid)))
+
+```
+
+
+```{r}
+sce_object <- readRDS("~/../Downloads/baron-human.rds")
+ground_truth <- sce_object$cell_type1
+ground_truth <- ground_truth[sce_object$human==2]
+rm(sce_object)
+
+load("Baron2_ILoReg_clustering_dimensionality_reduction.RData")
+load("Baron2_Seurat_clustering_dimensionality_reduction.RData")
+load("Baron2_SC3_clustering_dimensionality_reduction.RData")
+load("Baron2_CIDR_clustering_dimensionality_reduction.RData")
+load("Baron2_RaceID3_clustering_dimensionality_reduction.RData")
+
+df_Baron2 <- as.data.frame(matrix(c(ARI(ground_truth,clustering_iloreg),
+         ARI(ground_truth,clustering_Seurat),
+         ARI(ground_truth,clustering_sc3),
+         ARI(ground_truth,clustering_cidr),
+         ARI(ground_truth,clustering_raceid)),ncol = 1,dimnames = list(c(1:5),"ARI")))
+df_Baron2$Method <- c("ILoReg","Seurat","SC3","CIDR","RaceID3")
+df_Baron2$Dataset <- "Baron2"
+print(df_Baron2)
+
+k_estimates_Baron_2 <- c(length(table(ground_truth)),
+                         length(table(clustering_iloreg)),
+                         length(table(clustering_Seurat)),
+                         length(table(clustering_sc3)),
+                         length(table(clustering_cidr)),
+                         length(table(clustering_raceid)))
+
+
+```
+
+
+
+```{r}
+sce_object <- readRDS("~/../Downloads/baron-human.rds")
+ground_truth <- sce_object$cell_type1
+ground_truth <- ground_truth[sce_object$human==3]
+rm(sce_object)
+
+load("Baron3_ILoReg_clustering_dimensionality_reduction.RData")
+load("Baron3_Seurat_clustering_dimensionality_reduction.RData")
+load("Baron3_SC3_clustering_dimensionality_reduction.RData")
+load("Baron3_CIDR_clustering_dimensionality_reduction.RData")
+load("Baron3_RaceID3_clustering_dimensionality_reduction.RData")
+
+df_Baron3 <- as.data.frame(matrix(c(ARI(ground_truth,clustering_iloreg),
+         ARI(ground_truth,clustering_Seurat),
+         ARI(ground_truth,clustering_sc3),
+         ARI(ground_truth,clustering_cidr),
+         ARI(ground_truth,clustering_raceid)),ncol = 1,dimnames = list(c(1:5),"ARI")))
+df_Baron3$Method <- c("ILoReg","Seurat","SC3","CIDR","RaceID3")
+df_Baron3$Dataset <- "Baron3"
+print(df_Baron3)
+
+
+k_estimates_Baron_3 <- c(length(table(ground_truth)),
+                         length(table(clustering_iloreg)),
+                         length(table(clustering_Seurat)),
+                         length(table(clustering_sc3)),
+                         length(table(clustering_cidr)),
+                         length(table(clustering_raceid)))
+
+
+```
+
+
+
+```{r}
+sce_object <- readRDS("~/../Downloads/baron-human.rds")
+ground_truth <- sce_object$cell_type1
+ground_truth <- ground_truth[sce_object$human==4]
+rm(sce_object)
+
+load("Baron4_ILoReg_clustering_dimensionality_reduction.RData")
+load("Baron4_Seurat_clustering_dimensionality_reduction.RData")
+load("Baron4_SC3_clustering_dimensionality_reduction.RData")
+load("Baron4_CIDR_clustering_dimensionality_reduction.RData")
+load("Baron4_RaceID3_clustering_dimensionality_reduction.RData")
+
+df_Baron4 <- as.data.frame(matrix(c(ARI(ground_truth,clustering_iloreg),
+         ARI(ground_truth,clustering_Seurat),
+         ARI(ground_truth,clustering_sc3),
+         ARI(ground_truth,clustering_cidr),
+         ARI(ground_truth,clustering_raceid)),ncol = 1,dimnames = list(c(1:5),"ARI")))
+df_Baron4$Method <- c("ILoReg","Seurat","SC3","CIDR","RaceID3")
+df_Baron4$Dataset <- "Baron4"
+print(df_Baron4)
+
+
+k_estimates_Baron_4 <- c(length(table(ground_truth)),
+                         length(table(clustering_iloreg)),
+                         length(table(clustering_Seurat)),
+                         length(table(clustering_sc3)),
+                         length(table(clustering_cidr)),
+                         length(table(clustering_raceid)))
+
+```
+
+
+
+```{r}
+anno_1 <- read.table("~/../Downloads/GSM3587996_BM1.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_2 <- read.table("D:/GSE116256_RAW/GSM3587997_BM2.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_3 <- read.table("D:/GSE116256_RAW/GSM3587999_BM3.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_4 <- read.table("D:/GSE116256_RAW/GSM3588001_BM4.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_5_1 <- read.table("D:/GSE116256_RAW/GSM3588002_BM5-34p.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_5_2 <- read.table("D:/GSE116256_RAW/GSM3588003_BM5-34p38n.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+
+anno <- anno_1
+
+ground_truth <- factor(anno$CellType)
+names(ground_truth) <- rownames(anno)
+
+load("vanGalen_BM_1_ILoReg_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_1_Seurat_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_1_SC3_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_1_CIDR_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_1_RaceID3_clustering_dimensionality_reduction.RData")
+
+df_vanGalen_BM_1 <- as.data.frame(matrix(c(ARI(ground_truth,clustering_iloreg),
+         ARI(ground_truth,clustering_Seurat),
+         ARI(ground_truth,clustering_sc3),
+         ARI(ground_truth,clustering_cidr),
+         ARI(ground_truth,clustering_raceid)),ncol = 1,dimnames = list(c(1:5),"ARI")))
+df_vanGalen_BM_1$Method <- c("ILoReg","Seurat","SC3","CIDR","RaceID3")
+df_vanGalen_BM_1$Dataset <- "vanGalen_BM_1"
+print(df_vanGalen_BM_1)
+
+k_estimates_vanGalen_BM_1 <- c(length(table(ground_truth)),
+                         length(table(clustering_iloreg)),
+                         length(table(clustering_Seurat)),
+                         length(table(clustering_sc3)),
+                         length(table(clustering_cidr)),
+                         length(table(clustering_raceid)))
+
+```
+
+
+
+```{r}
+# anno_1 <- read.table("~/../Downloads/GSM3587996_BM1.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+anno_2 <- read.table("D:/GSE116256_RAW/GSM3587997_BM2.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_3 <- read.table("D:/GSE116256_RAW/GSM3587999_BM3.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_4 <- read.table("D:/GSE116256_RAW/GSM3588001_BM4.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_5_1 <- read.table("D:/GSE116256_RAW/GSM3588002_BM5-34p.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_5_2 <- read.table("D:/GSE116256_RAW/GSM3588003_BM5-34p38n.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+
+anno <- anno_2
+
+ground_truth <- factor(anno$CellType)
+names(ground_truth) <- rownames(anno)
+
+load("vanGalen_BM_2_ILoReg_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_2_Seurat_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_2_SC3_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_2_CIDR_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_2_RaceID3_clustering_dimensionality_reduction.RData")
+
+df_vanGalen_BM_2 <- as.data.frame(matrix(c(ARI(ground_truth,clustering_iloreg),
+         ARI(ground_truth,clustering_Seurat),
+         ARI(ground_truth,clustering_sc3),
+         ARI(ground_truth,clustering_cidr),
+         ARI(ground_truth,clustering_raceid)),ncol = 1,dimnames = list(c(1:5),"ARI")))
+df_vanGalen_BM_2$Method <- c("ILoReg","Seurat","SC3","CIDR","RaceID3")
+df_vanGalen_BM_2$Dataset <- "vanGalen_BM_2"
+print(df_vanGalen_BM_2)
+
+k_estimates_vanGalen_BM_2 <- c(length(table(ground_truth)),
+                         length(table(clustering_iloreg)),
+                         length(table(clustering_Seurat)),
+                         length(table(clustering_sc3)),
+                         length(table(clustering_cidr)),
+                         length(table(clustering_raceid)))
+
+```
+
+
+
+```{r}
+# anno_1 <- read.table("~/../Downloads/GSM3587996_BM1.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_2 <- read.table("D:/GSE116256_RAW/GSM3587997_BM2.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+anno_3 <- read.table("D:/GSE116256_RAW/GSM3587999_BM3.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_4 <- read.table("D:/GSE116256_RAW/GSM3588001_BM4.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_5_1 <- read.table("D:/GSE116256_RAW/GSM3588002_BM5-34p.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_5_2 <- read.table("D:/GSE116256_RAW/GSM3588003_BM5-34p38n.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+
+anno <- anno_3
+
+ground_truth <- factor(anno$CellType)
+names(ground_truth) <- rownames(anno)
+
+load("vanGalen_BM_3_ILoReg_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_3_Seurat_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_3_SC3_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_3_CIDR_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_3_RaceID3_clustering_dimensionality_reduction.RData")
+
+df_vanGalen_BM_3 <- as.data.frame(matrix(c(ARI(ground_truth,clustering_iloreg),
+         ARI(ground_truth,clustering_Seurat),
+         ARI(ground_truth,clustering_sc3),
+         ARI(ground_truth,clustering_cidr),
+         ARI(ground_truth,clustering_raceid)),ncol = 1,dimnames = list(c(1:5),"ARI")))
+df_vanGalen_BM_3$Method <- c("ILoReg","Seurat","SC3","CIDR","RaceID3")
+df_vanGalen_BM_3$Dataset <- "vanGalen_BM_3"
+print(df_vanGalen_BM_3)
+
+k_estimates_vanGalen_BM_3 <- c(length(table(ground_truth)),
+                         length(table(clustering_iloreg)),
+                         length(table(clustering_Seurat)),
+                         length(table(clustering_sc3)),
+                         length(table(clustering_cidr)),
+                         length(table(clustering_raceid)))
+
+```
+
+
+
+```{r}
+# anno_1 <- read.table("~/../Downloads/GSM3587996_BM1.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_2 <- read.table("D:/GSE116256_RAW/GSM3587997_BM2.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_3 <- read.table("D:/GSE116256_RAW/GSM3587999_BM3.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+anno_4 <- read.table("D:/GSE116256_RAW/GSM3588001_BM4.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_5_1 <- read.table("D:/GSE116256_RAW/GSM3588002_BM5-34p.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_5_2 <- read.table("D:/GSE116256_RAW/GSM3588003_BM5-34p38n.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+
+anno <- anno_4
+
+ground_truth <- factor(anno$CellType)
+names(ground_truth) <- rownames(anno)
+
+load("vanGalen_BM_4_ILoReg_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_4_Seurat_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_4_SC3_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_4_CIDR_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_4_RaceID3_clustering_dimensionality_reduction.RData")
+
+df_vanGalen_BM_4 <- as.data.frame(matrix(c(ARI(ground_truth,clustering_iloreg),
+         ARI(ground_truth,clustering_Seurat),
+         ARI(ground_truth,clustering_sc3),
+         ARI(ground_truth,clustering_cidr),
+         ARI(ground_truth,clustering_raceid)),ncol = 1,dimnames = list(c(1:5),"ARI")))
+df_vanGalen_BM_4$Method <- c("ILoReg","Seurat","SC3","CIDR","RaceID3")
+df_vanGalen_BM_4$Dataset <- "vanGalen_BM_4"
+print(df_vanGalen_BM_4)
+
+k_estimates_vanGalen_BM_4 <- c(length(table(ground_truth)),
+                         length(table(clustering_iloreg)),
+                         length(table(clustering_Seurat)),
+                         length(table(clustering_sc3)),
+                         length(table(clustering_cidr)),
+                         length(table(clustering_raceid)))
+
+```
+
+
+
+```{r}
+# anno_1 <- read.table("~/../Downloads/GSM3587996_BM1.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_2 <- read.table("D:/GSE116256_RAW/GSM3587997_BM2.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_3 <- read.table("D:/GSE116256_RAW/GSM3587999_BM3.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_4 <- read.table("D:/GSE116256_RAW/GSM3588001_BM4.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+anno_5_1 <- read.table("D:/GSE116256_RAW/GSM3588002_BM5-34p.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_5_2 <- read.table("D:/GSE116256_RAW/GSM3588003_BM5-34p38n.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+
+anno <- anno_5_1
+
+ground_truth <- factor(anno$CellType)
+names(ground_truth) <- rownames(anno)
+
+load("vanGalen_BM_5_1_ILoReg_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_5_1_Seurat_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_5_1_SC3_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_5_1_CIDR_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_5_1_RaceID3_clustering_dimensionality_reduction.RData")
+
+df_vanGalen_BM_5_1 <- as.data.frame(matrix(c(ARI(ground_truth,clustering_iloreg),
+         ARI(ground_truth,clustering_Seurat),
+         ARI(ground_truth,clustering_sc3),
+         ARI(ground_truth,clustering_cidr),
+         ARI(ground_truth,clustering_raceid)),ncol = 1,dimnames = list(c(1:5),"ARI")))
+df_vanGalen_BM_5_1$Method <- c("ILoReg","Seurat","SC3","CIDR","RaceID3")
+df_vanGalen_BM_5_1$Dataset <- "vanGalen_BM_5_1"
+print(df_vanGalen_BM_5_1)
+
+k_estimates_vanGalen_BM_5_1 <- c(length(table(ground_truth)),
+                         length(table(clustering_iloreg)),
+                         length(table(clustering_Seurat)),
+                         length(table(clustering_sc3)),
+                         length(table(clustering_cidr)),
+                         length(table(clustering_raceid)))
+
+```
+
+```{r}
+# anno_1 <- read.table("~/../Downloads/GSM3587996_BM1.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_2 <- read.table("D:/GSE116256_RAW/GSM3587997_BM2.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_3 <- read.table("D:/GSE116256_RAW/GSM3587999_BM3.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_4 <- read.table("D:/GSE116256_RAW/GSM3588001_BM4.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+# anno_5_1 <- read.table("D:/GSE116256_RAW/GSM3588002_BM5-34p.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+anno_5_2 <- read.table("D:/GSE116256_RAW/GSM3588003_BM5-34p38n.anno.txt.gz",header = TRUE,row.names = 1,as.is=TRUE,sep = "\t")
+
+anno <- anno_5_2
+
+anno <- anno[anno$CellType!="",]
+
+ground_truth <- factor(anno$CellType)
+names(ground_truth) <- rownames(anno)
+
+load("vanGalen_BM_5_2_ILoReg_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_5_2_Seurat_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_5_2_SC3_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_5_2_CIDR_clustering_dimensionality_reduction.RData")
+load("vanGalen_BM_5_2_RaceID3_clustering_dimensionality_reduction.RData")
+
+df_vanGalen_BM_5_2 <- as.data.frame(matrix(c(ARI(ground_truth,clustering_iloreg),
+         ARI(ground_truth,clustering_Seurat),
+         ARI(ground_truth,clustering_sc3),
+         ARI(ground_truth,clustering_cidr),
+         ARI(ground_truth,clustering_raceid)),ncol = 1,dimnames = list(c(1:5),"ARI")))
+df_vanGalen_BM_5_2$Method <- c("ILoReg","Seurat","SC3","CIDR","RaceID3")
+df_vanGalen_BM_5_2$Dataset <- "vanGalen_BM_5_2"
+print(df_vanGalen_BM_5_2)
+
+
+
+k_estimates_vanGalen_BM_5_2 <- c(length(table(ground_truth)),
+                         length(table(clustering_iloreg)),
+                         length(table(clustering_Seurat)),
+                         length(table(clustering_sc3)),
+                         length(table(clustering_cidr)),
+                         length(table(clustering_raceid)))
+
+```
+
+
+
+```{r}
+df <- rbind(df_Pollen,
+            df_Baron1,
+            df_Baron2,
+            df_Baron3,
+            df_Baron4,
+            df_vanGalen_BM_1,
+            df_vanGalen_BM_2,
+            df_vanGalen_BM_3,
+            df_vanGalen_BM_4,
+            df_vanGalen_BM_5_1,
+            df_vanGalen_BM_5_2)
+```
+
+
+```{r}
+p<-ggplot(df, aes(x=Dataset, y=ARI, fill=Method)) +
+  geom_bar(stat="identity",color="black",width=0.7,position=position_dodge())+
+  theme_bw() +
+  scale_fill_brewer(palette="Set2") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p
+```
+
+
+
+
+```{r}
+ggsave("ari_barplot.png",plot = p,width = 6,height = 4,units = "in",dpi = 300)
+ggsave("ari_barplot.pdf",plot = p,width = 6,height = 4,units = "in")
+```
+
+
+```{r}
+k_estimates_all <- c(k_estimates_Pollen,
+                     k_estimates_Baron_1,k_estimates_Baron_2,k_estimates_Baron_3,k_estimates_Baron_4,
+                     k_estimates_vanGalen_BM_1,k_estimates_vanGalen_BM_2,k_estimates_vanGalen_BM_3,k_estimates_vanGalen_BM_4,
+                     k_estimates_vanGalen_BM_5_1,k_estimates_vanGalen_BM_5_2)
+k_estimates_all <- reshape2::melt(k_estimates_all)
+k_estimates_all$Method <- rep(c("GroundTruth","ILoReg","Seurat","SC3","CIDR","RaceID3"),11)
+k_estimates_all$Dataset <- c(rep("Pollen",6),
+                             rep("Baron1",6),rep("Baron2",6),rep("Baron3",6),rep("Baron4",6),
+                             rep("vanGalen_BM_1",6),rep("vanGalen_BM_2",6),rep("vanGalen_BM_3",6),rep("vanGalen_BM_4",6),
+                             rep("vanGalen_BM_5_1",6),rep("vanGalen_BM_5_2",6))
+
+
+
+
+p<-ggplot(k_estimates_all, aes(x=Dataset, y=value, fill=Method)) +
+  geom_bar(stat="identity",color="black",width=0.7,position=position_dodge())+
+  theme_bw() +
+  scale_fill_brewer(palette="Set2") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  ylab("Estimated k")
+p
+
+
+
+pl <- lapply(names(table(k_estimates_all$Dataset)),function(x) ggplot(k_estimates_all[k_estimates_all$Dataset==x & k_estimates_all$Method!="GroundTruth",], aes(x=Dataset, y=value, fill=Method))+geom_bar(stat="identity",color="black",width=1,position=position_dodge())+theme_bw()+scale_fill_brewer(palette="Set2") +ylab("Estimated k")+geom_hline(yintercept=k_estimates_all[k_estimates_all$Method=="GroundTruth" & k_estimates_all$Dataset==x,"value"],size=2))
+
+p <- plot_grid(plotlist=pl)
+
+ggsave("estimated_k_barplot.png",plot = p,width = 16,height = 9,units = "in",dpi = 300)
+ggsave("estimated_k_barplot.pdf",plot = p,width = 16,height = 9,units = "in")
+
+
+```
+
