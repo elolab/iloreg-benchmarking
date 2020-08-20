@@ -1,0 +1,262 @@
+---
+title: "Visualization comparison - Baron 1 dataset"
+output: html_notebook
+---
+
+
+```{r}
+PlotTwoDimensional <- function(two.dim.data = NULL,color.by=NULL,return.plot=FALSE,legend.title="group",xlab="dim1",ylab="dim2",point.size=0.75,text.labels=TRUE,legend=TRUE)
+{
+  library(ggplot2)
+  library(reshape2)
+  library(scales)
+  
+  df <- as.data.frame(two.dim.data)
+  if (!is.null(color.by)) {
+    df$group <- color.by
+    colnames(df) <- c("dim1","dim2","group")
+    names(color.by) <- rownames(two.dim.data)
+  } else {
+    colnames(df) <- c("dim1","dim2")
+    
+  }
+  if (class(color.by) == "numeric")
+  {
+    df$group[is.infinite(df$group)] <- NA
+    df$type <- factor(is.na(df$group))
+    p<-ggplot(df, aes(x=dim1, y=dim2)) +
+      geom_point(size=point.size,aes(color=group)) +
+      scale_colour_gradient2(low = muted("red"), mid = "lightgrey",
+                             high = "blue",name = legend.title,na.value = "gray20") +
+      xlab(xlab) +
+      ylab(ylab) + theme_classic()
+    
+    
+    if (!legend)
+    {
+      p <- p + theme(legend.position = "none")
+    }
+    
+    
+  } else if (is.null(color.by)) {
+    p <- ggplot(df, aes(x=dim1, y=dim2)) + 
+      geom_point(size=point.size) + 
+      xlab(xlab) +
+      ylab(ylab)
+  } else {
+    
+    two.dim.data_ <- two.dim.data
+    rownames(two.dim.data_) <- names(color.by)
+    cluster_centers <- lapply(levels(color.by),function(x) apply(two.dim.data_[names(color.by)[color.by==x],,drop=FALSE],2,median))
+    cluster_centers <- do.call(rbind,cluster_centers)
+    
+    
+    p<-ggplot(df, aes(x=dim1, y=dim2)) +
+      geom_point(size=point.size,aes(color=group)) +
+      xlab(xlab) +
+      ylab(ylab) +
+      theme_classic()
+    
+    if (text.labels) {
+      p <- p + annotate("text", x = cluster_centers[,1], y = cluster_centers[,2], label = levels(color.by)) +
+        guides(colour = guide_legend(override.aes = list(size=2)))
+    }
+    if (!legend)
+    {
+      p <- p + theme(legend.position = "none")
+    }
+    
+  }
+  if (return.plot)
+  {
+    return(p)
+  } else {
+    print(p)
+  }
+}
+
+```
+
+
+```{r,eval = FALSE}
+# Install the correct version of ILoReg
+devtools::install_github("elolab/iloreg",ref = "85196be6")
+```
+
+
+```{r}
+library(ILoReg)
+```
+
+
+```{r}
+# Read data 
+sce_object <- readRDS("~/../Downloads/baron-human.rds")
+raw_data <- counts(sce_object)
+data <- logcounts(sce_object)
+raw_data <- Matrix::Matrix(as.matrix(raw_data),sparse = TRUE)
+data <- Matrix::Matrix(as.matrix(data),sparse = TRUE)
+data <- data[,sce_object$human==1]
+raw_data <- raw_data[,sce_object$human==1]
+
+ground_truth <- sce_object$cell_type1
+ground_truth <- ground_truth[sce_object$human==1]
+names(ground_truth) <- colnames(data)
+```
+
+```{r}
+# Create object of iloreg class
+library(ILoReg)
+iloreg_object <- CreateILoRegObject(normalized.data = data)
+```
+
+```{r, eval = FALSE}
+# Run ICP L times
+set.seed(1)
+iloreg_object <- RunILoRegConsensus(iloreg_object,threads = 3,L = 200,k = 15,C = 0.3,r = 5,d = 0.3)
+```
+
+```{r, eval = FALSE}
+# Save results
+save(iloreg_object,file="D:/Baron1/Baron1_ILoReg_k_15_C_0.3_d_0.3_r_5_SEED_1_results.RData")
+```
+
+
+
+Run PCA over the consensus probability matrix and tSNE or UMAP
+```{r}
+tictoc::tic()
+iloreg_object <- RunPCA(iloreg_object,p = 50,scale = FALSE)
+tictoc::toc()
+
+```
+
+
+
+```{r}
+# Run nonlinear dimensionality reduction using UMAP and tSNE. Set the seed again to get reproducible results. (the first step was computed in a cluster).
+set.seed(1)
+iloreg_object <- RunTSNE(iloreg_object,perplexity=30)
+```
+
+
+```{r}
+# Clustering of the PCA-rotated data using Ward's agglomeration
+iloreg_object <- HierarchicalClustering(iloreg_object)
+```
+
+
+
+```{r}
+# Manually select K=30 clusters from the dendrogram. 
+iloreg_object <- SelectKClusters(iloreg_object,K=30)
+```
+
+
+
+```{r}
+# Visualize expression of MALAT1 gene across the cells.
+GeneScatterPlot(iloreg_object,"MALAT1",dim.reduction.type = "tsne")
+```
+
+```{r}
+# Visualize tSNE along with the optimal and manual clusterings.
+ClusteringScatterPlot(iloreg_object,"manual",dim.reduction.type = "tsne")
+```
+
+
+```{r}
+# Merge clusters of the large beta cell cluster
+iloreg_object <- MergeClusters(iloreg_object,clusters.to.merge = c(14,22,12,10,7,2,17,21,5,9,15,18,16),new.name="Beta1")
+```
+
+
+```{r}
+# Visualize the clustering
+ClusteringScatterPlot(iloreg_object,"manual",dim.reduction.type = "tsne")
+```
+
+
+```{r}
+# Visualize reference clustering
+AnnotationScatterPlot(iloreg_object,ground_truth,dim.reduction.type = "tsne",point.size = 0.5,return.plot = F)
+```
+
+
+
+
+```{r}
+# Visualize reference clustering and MALAT1 expression side by side
+annotation_ILoReg <- PlotTwoDimensional(iloreg_object@tsne.embeddings,ground_truth,point.size = 0.3,return.plot = T,text.labels = FALSE,legend = FALSE,xlab = "tSNE_1",ylab = "tSNE_2")
+MALAT1_ILoReg <- PlotTwoDimensional(iloreg_object@tsne.embeddings,iloreg_object@normalized.data["MALAT1",],point.size = 0.3,return.plot = T,legend = FALSE, xlab = "tSNE_1",ylab = "tSNE_2")
+cowplot::plot_grid(annotation_ILoReg,MALAT1_ILoReg)
+```
+
+
+```{r}
+# Find DE genes between the two beta cell populatios
+gene_markers_beta <- FindGeneMarkers(iloreg_object,clusters.1 = 29,clusters.2 = "Beta1",
+                                 clustering.type = "manual",
+                                 test = "wilcox",
+                                 logfc.threshold = 0.25,
+                                 min.pct = 0.25,
+                                 pseudocount.use = 1,
+                                 min.cells.cluster = 3,
+                                 return.thresh = 0.01,
+                                 only.pos = FALSE)
+
+```
+
+
+
+
+
+```{r}
+# Run analysis using Seurat
+source("help_functions.R")
+
+
+# In this case, the dataset had already gone through a filtering process by the authors of the original study, so the parameters were changed so that no cells were removed.
+nFeature_RNA_min <- 200
+nFeature_RNA_max <- 100000
+percent_mt <- 99
+seurat_results <- RunSeurat(raw.data = raw_data,log.normalized.data = data,min.cells = 3,min.features = 200,
+                            nFeature_RNA_min = nFeature_RNA_min,nFeature_RNA_max = nFeature_RNA_max,percent_mt = percent_mt,nfeatures = 2000,dims = 1:10,resolution = 0.8,return.seurat.obj = TRUE,run.umap.instead = FALSE)
+
+```
+
+```{r}
+# Visualize clustering
+DimPlot(seurat_results)
+```
+
+
+```{r}
+# Visualize reference clustering
+Idents(seurat_results) <- ground_truth
+DimPlot(seurat_results,label = T)
+
+```
+```{r}
+annotation_Seurat <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,ground_truth,xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,text.labels = FALSE,legend = FALSE)
+MALAT1_Seurat <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["MALAT1",],xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend.title = "MALAT1",legend = FALSE)
+
+```
+
+```{r}
+
+MALAT1_Seurat_with_legend <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["MALAT1",],xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend.title = "MALAT1",legend = TRUE)
+
+
+p <-cowplot::plot_grid(annotation_ILoReg,annotation_Seurat,MALAT1_Seurat_with_legend,
+                       MALAT1_ILoReg,MALAT1_Seurat,MALAT1_Seurat_with_legend)
+
+
+
+cowplot::ggsave("~/manuscript_ILoReg/figure_4/Baron1.png",plot = p,width = 8,height = 4,units = "in",dpi = 300)
+cowplot::ggsave("~/manuscript_ILoReg/figure_4/Baron1.pdf",plot = p,width = 8,height = 4,units = "in")
+
+
+```
+
+

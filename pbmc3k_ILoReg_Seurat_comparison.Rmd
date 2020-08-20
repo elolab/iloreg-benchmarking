@@ -1,0 +1,172 @@
+---
+title: "Visualization comparison - pbmc3k dataset"
+output: html_notebook
+---
+
+
+Read 10X Chromium PBMC data and log normalize them 
+```{r}
+data <- Seurat::LogNormalize(Seurat::Read10X("D:/10x_data/pbmc3k/filtered_gene_bc_matrices_GRCh38.p12/GRCh38/"))
+```
+
+
+```{r}
+PlotTwoDimensional <- function(two.dim.data = NULL,color.by=NULL,return.plot=FALSE,legend.title="group",xlab="dim1",ylab="dim2",point.size=0.75,text.labels=TRUE,legend=TRUE)
+{
+  library(ggplot2)
+  library(reshape2)
+  library(scales)
+  
+  df <- as.data.frame(two.dim.data)
+  if (!is.null(color.by)) {
+    df$group <- color.by
+    colnames(df) <- c("dim1","dim2","group")
+    names(color.by) <- rownames(two.dim.data)
+  } else {
+    colnames(df) <- c("dim1","dim2")
+    
+  }
+  if (class(color.by) == "numeric")
+  {
+    df$group[is.infinite(df$group)] <- NA
+    df$type <- factor(is.na(df$group))
+    p<-ggplot(df, aes(x=dim1, y=dim2)) +
+      geom_point(size=point.size,aes(color=group)) +
+      scale_colour_gradient2(low = muted("red"), mid = "lightgrey",
+                             high = "blue",name = legend.title,na.value = "gray20") +
+      xlab(xlab) +
+      ylab(ylab) + theme_classic()
+    
+    
+    if (!legend)
+    {
+      p <- p + theme(legend.position = "none")
+    }
+    
+    
+  } else if (is.null(color.by)) {
+    p <- ggplot(df, aes(x=dim1, y=dim2)) + 
+      geom_point(size=point.size) + 
+      xlab(xlab) +
+      ylab(ylab)
+  } else {
+    
+    two.dim.data_ <- two.dim.data
+    rownames(two.dim.data_) <- names(color.by)
+    cluster_centers <- lapply(levels(color.by),function(x) apply(two.dim.data_[names(color.by)[color.by==x],,drop=FALSE],2,median))
+    cluster_centers <- do.call(rbind,cluster_centers)
+    
+    
+    p<-ggplot(df, aes(x=dim1, y=dim2)) +
+      geom_point(size=point.size,aes(color=group)) +
+      xlab(xlab) +
+      ylab(ylab) +
+      theme_classic()
+    
+    if (text.labels) {
+      p <- p + annotate("text", x = cluster_centers[,1], y = cluster_centers[,2], label = levels(color.by)) +
+        guides(colour = guide_legend(override.aes = list(size=2)))
+    }
+    if (!legend)
+    {
+      p <- p + theme(legend.position = "none")
+    }
+    
+  }
+  if (return.plot)
+  {
+    return(p)
+  } else {
+    print(p)
+  }
+}
+
+```
+
+
+
+
+
+Create object of iloreg class
+```{r}
+library(ILoReg)
+iloreg_object <- CreateILoRegObject(normalized.data = data)
+```
+
+Run consensus ILoReg. This is the slowest step of the workflow and parallel processing greatly speeds up the process. 
+```{r}
+set.seed(1)
+iloreg_object <- RunILoRegConsensus(iloreg_object,threads = 3,k = 15,d = 0.3,r = 5,C = 0.3,L = 200)
+```
+
+
+```{r}
+set.seed(1)
+VisualizeQC(iloreg_object,return.plot = F)
+iloreg_object <- RunPCA(iloreg_object,p = 50,scale = FALSE)
+PCAElbowPlot(iloreg_object)
+iloreg_object <- RunUMAP(iloreg_object)
+iloreg_object <- RunTSNE(iloreg_object,perplexity=30)
+# Clustering of the PCA-rotated data using Ward's agglomeration
+#Calculate the silhouette information for K in 2:50 and visualize the average silhouette values. Moreover, the clustering acquired using K with the highest average silhouette is saved to *clustering.optimal* slot.
+# iloreg_object <- CalculateSilhouetteInformation(iloreg_object,k.range = 2:50) # Optional
+# SilhouetteCurve(iloreg_object,return.plot = F)
+# Manually select K=50 clusters from the dendrogram. This clustering is saved to *clustering.manual* slot and is overwritten every time this function is called.
+
+p_ILoReg_k_15_tsne_CD3D <- PlotTwoDimensional(iloreg_object@tsne.embeddings,iloreg_object@normalized.data["CD3D",],return.plot = T,legend.title = "CD3D",point.size = 0.3,xlab = "tSNE_1",ylab = "tSNE_2",legend = FALSE)
+p_ILoReg_k_15_tsne_CCR7 <- PlotTwoDimensional(iloreg_object@tsne.embeddings,iloreg_object@normalized.data["CCR7",],return.plot = T,legend.title = "CCR7",point.size = 0.3,xlab = "tSNE_1",ylab = "tSNE_2",legend = FALSE)
+p_ILoReg_k_15_tsne_CD8B <- PlotTwoDimensional(iloreg_object@tsne.embeddings,iloreg_object@normalized.data["CD8B",],return.plot = T,legend.title = "CD8B",point.size = 0.3,xlab = "tSNE_1",ylab = "tSNE_2",legend = FALSE)
+p_ILoReg_k_15_tsne_S100A4 <- PlotTwoDimensional(iloreg_object@tsne.embeddings,iloreg_object@normalized.data["S100A4",],return.plot = T,legend.title = "S100A4",point.size = 0.3,xlab = "tSNE_1",ylab = "tSNE_2",legend = FALSE)
+p_ILoReg_k_15_tsne_S100B <- PlotTwoDimensional(iloreg_object@tsne.embeddings,iloreg_object@normalized.data["S100B",],return.plot = T,legend.title = "S100B",point.size = 0.3,xlab = "tSNE_1",ylab = "tSNE_2",legend = FALSE)
+p_ILoReg_k_15_tsne <- cowplot::plot_grid(p_ILoReg_k_15_tsne_CD3D,p_ILoReg_k_15_tsne_CCR7,p_ILoReg_k_15_tsne_CD8B,p_ILoReg_k_15_tsne_S100A4,p_ILoReg_k_15_tsne_S100B,ncol = 1)
+
+```
+
+```{r}
+source("help_functions.R")
+
+raw_data <- Seurat::Read10X("D:/10x_data/pbmc3k/filtered_gene_bc_matrices_GRCh38.p12/GRCh38/")
+
+# These filtering settings are the same as in the Seurat tutorial for this dataset
+nFeature_RNA_min <- 200
+nFeature_RNA_max <- 2500
+percent_mt <- 5
+seurat_results <- RunSeurat(raw.data = raw_data,log.normalized.data = NULL,min.cells = 3,min.features = 200,
+                            nFeature_RNA_min = nFeature_RNA_min,nFeature_RNA_max = nFeature_RNA_max,percent_mt = percent_mt,nfeatures = 2000,dims = 1:10,resolution = 0.8,return.seurat.obj = TRUE)
+
+
+```
+
+
+
+```{r}
+
+p_Seurat_tsne_CD3D <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["CD3D",],return.plot = T,legend.title = "CD3D",xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend = FALSE)
+p_Seurat_tsne_CCR7 <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["CCR7",],return.plot = T,legend.title = "CCR7",xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend = FALSE)
+p_Seurat_tsne_CD8B <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["CD8B",],return.plot = T,legend.title = "CD8B",xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend = FALSE)
+p_Seurat_tsne_S100A4 <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["S100A4",],return.plot = T,legend.title = "S100A4",xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend = FALSE)
+p_Seurat_tsne_S100B <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["S100B",],return.plot = T,legend.title = "S100B",xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend = FALSE)
+
+
+p_Seurat_tsne_CD3D_withLegend <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["CD3D",],return.plot = T,legend.title = "CD3D",xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend = TRUE)
+p_Seurat_tsne_CCR7_withLegend <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["CCR7",],return.plot = T,legend.title = "CCR7",xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend = TRUE)
+p_Seurat_tsne_CD8B_withLegend <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["CD8B",],return.plot = T,legend.title = "CD8B",xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend = TRUE)
+p_Seurat_tsne_S100A4_withLegend <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["S100A4",],return.plot = T,legend.title = "S100A4",xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend = TRUE)
+p_Seurat_tsne_S100B_withLegend <- PlotTwoDimensional(seurat_results@reductions$tsne@cell.embeddings,seurat_results@assays$RNA@data["S100B",],return.plot = T,legend.title = "S100B",xlab = "tSNE_1",ylab="tSNE_2",point.size = 0.3,legend = TRUE)
+
+
+```
+
+
+
+```{r}
+p_ILoReg_Seurat <- cowplot::plot_grid(p_ILoReg_k_15_tsne_CD3D,p_Seurat_tsne_CD3D,p_Seurat_tsne_CD3D_withLegend, p_ILoReg_k_15_tsne_CD8B,p_Seurat_tsne_CD8B,p_Seurat_tsne_CD8B_withLegend,p_ILoReg_k_15_tsne_CCR7,p_Seurat_tsne_CCR7,p_Seurat_tsne_CCR7_withLegend,p_ILoReg_k_15_tsne_S100B,p_Seurat_tsne_S100B,p_Seurat_tsne_S100B_withLegend,ncol=3)
+
+ggplot2::ggsave("~/manuscript_ILoReg/figure_4/pbmc3k_ILoReg_Seurat_comparison.png",plot = p_ILoReg_Seurat,width = 7,height = 7,units = "in",dpi = 300)
+ggplot2::ggsave("~/manuscript_ILoReg/figure_4/pbmc3k_ILoReg_Seurat_comparison.pdf",plot = p_ILoReg_Seurat,width = 7,height = 7,units = "in")
+
+```
+
+
+
+
